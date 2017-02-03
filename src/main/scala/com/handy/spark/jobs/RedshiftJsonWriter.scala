@@ -19,12 +19,18 @@ case class JsonFile(url: String) extends Source
 object Source {
   def objsToStr(obj: JsonObject): JsonObject =
     obj.toList.map { case (k, v) =>
-      (k, v.withObject(o => o.asJson.noSpaces.asJson))
+      val jval = v.withObject(o => o.asJson.noSpaces.asJson)
+        .withArray(a => a.asJson.noSpaces.asJson)
+      (k, jval.withString(s =>
+          (if (s.size > (65535 / 4)) s.take(65535 / 4) else s).asJson))
     }.toMap.asJson.asObject.get
 
   def getDF(s: Source)(implicit sc: SparkContext, sqlContext: SQLContext)
   : DataFrame = s match {
-    case Table(name) => sqlContext.table(name)
+    case Table(name) => {
+      println(s"copying table $name")
+      sqlContext.table(name)
+    }
     case Query(sql) => sqlContext.sql(sql)
     case JsonFile(url) => {
       val rdd = sc.textFile(url).map { a =>
@@ -77,6 +83,26 @@ object Config {
 
 object RedshiftJsonWriter {
 
+  def numCharToChar(a: Char): Char = a match {
+    case '0' => 'a'
+    case '1' => 'b'
+    case '2' => 'c'
+    case '3' => 'd'
+    case '4' => 'e'
+    case '5' => 'f'
+    case '6' => 'g'
+    case '7' => 'h'
+    case '8' => 'i'
+    case '9' => 'j'
+    case _ => a
+  }
+
+  def legalizeName(name: String): String = {
+    val alphanum = (('a' to 'z') ++ ('A' to 'Z') ++ ('1' to '9')).toSet
+    numCharToChar(name.head) +:
+      name.tail.map(a => if (alphanum.contains(a)) a else a.toInt.toChar)
+  }
+
   def main(args: Array[String]): Unit = {
     val Some(Config(redshiftTable, url, tempdir, saveMode, source)) =
       Config.parser.parse(args, Config())
@@ -87,7 +113,7 @@ object RedshiftJsonWriter {
 
     def withLegalName(df: DataFrame, name: String): DataFrame = {
       def stripIllegal(s: String) = s.replaceAll("[^a-zA-Z]", "")
-      df.withColumnRenamed(name, stripIllegal(name))
+      df.withColumnRenamed(name, legalizeName(name))
     }
 
     val table: DataFrame = source.map(s =>
@@ -96,10 +122,15 @@ object RedshiftJsonWriter {
 
     val df = table.schema.fields.foldLeft(table) {
       case (t, StructField(name, StringType, _, _)) => {
-        val metadata = new MetadataBuilder().putString("redshift_type", "VARCHAR(MAX)").build()
-        withLegalName(t.withColumn(name, t(name).as(name, metadata)), name)
+        val metadata = new MetadataBuilder()
+          .putString("redshift_type", "VARCHAR(MAX)")
+          .build()
+
+        val legalName = legalizeName(name)
+        t.withColumnRenamed(name, legalName)
+        t.withColumn(legalName, t(legalName).as(legalName, metadata))
       }
-      case (t, StructField(name, _, _, _)) => withLegalName(t, name)
+      case (t, sf) => t.withColumnRenamed(sf.name, legalizeName(sf.name))
     }
 
     df.write
@@ -107,6 +138,7 @@ object RedshiftJsonWriter {
       .option("url", url)
       .option("dbtable", redshiftTable)
       .option("tempdir", tempdir)
+      .option("tempformat", "CSV")
       .mode(saveMode)
       .save()
   }
