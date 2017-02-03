@@ -1,0 +1,7 @@
+<configuration>
+<property>
+     <name>fs.defaultFS</name>
+     <value>hdfs://r-hadoopeco-pname-04433c9c.hbinternal.com:8020</value>
+     <description>Enter your NameNode hostname</description>
+</property>
+</configuration>
