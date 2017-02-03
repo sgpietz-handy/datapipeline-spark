@@ -9,6 +9,7 @@ RUN apt-get -y update
 RUN apt-get install -y default-jre
 RUN apt-get install -y --force-yes hadoop hive spark-2-3-4-0-3485
 
+COPY conf/spark-defaults.conf /usr/hdp/current/spark-client/conf/spark-defaults.conf
 COPY conf/hive-site.xml /usr/hdp/current/spark-client/conf/hive-site.xml
 COPY conf/yarn-site.xml /usr/hdp/current/hadoop-client/conf/yarn-site.xml
 COPY conf/core-site.xml /usr/hdp/current/hadoop-client/conf/core-site.xml
@@ -17,5 +18,5 @@ RUN wget https://s3.amazonaws.com/redshift-downloads/drivers/RedshiftJDBC42-1.2.
 
 COPY target/scala-2.10/handy-pipeline-assembly-0.2.jar /handy-pipeline-assembly.jar
 
-COPY ./entrypoint.sh /
-ENTRYPOINT ["/entrypoint.sh"]
+# COPY ./entrypoint.sh /
+# ENTRYPOINT ["/entrypoint.sh"]
