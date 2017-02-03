@@ -13,6 +13,8 @@ COPY conf/hive-site.xml /usr/hdp/current/spark-client/conf/hive-site.xml
 COPY conf/yarn-site.xml /usr/hdp/current/hadoop-client/conf/yarn-site.xml
 COPY conf/core-site.xml /usr/hdp/current/hadoop-client/conf/core-site.xml
 
+RUN wget https://s3.amazonaws.com/redshift-downloads/drivers/RedshiftJDBC42-1.2.1.1001.jar -O /RedshiftJDBC.jar
+
 COPY target/scala-2.10/handy-pipeline-assembly-0.2.jar /handy-pipeline-assembly.jar
 
 COPY ./entrypoint.sh /
