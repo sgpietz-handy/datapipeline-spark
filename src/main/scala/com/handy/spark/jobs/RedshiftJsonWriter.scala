@@ -120,6 +120,14 @@ object RedshiftJsonWriter {
       Source.getDF(s)
     ).getOrElse(throw new Exception("must specify one of -t, -f, or -e"))
 
+    val cl = ClassLoader.getSystemClassLoader
+
+    cl.asInstanceOf[java.net.URLClassLoader].getURLs.foreach(println)
+    println("driver:")
+    println(conf.get("spark.driver.extraClassPath"))
+    println("executor:")
+    println(conf.get("spark.executor.extraClassPath"))
+
     val df = table.schema.fields.foldLeft(table) {
       case (t, StructField(name, StringType, _, _)) => {
         val metadata = new MetadataBuilder()
