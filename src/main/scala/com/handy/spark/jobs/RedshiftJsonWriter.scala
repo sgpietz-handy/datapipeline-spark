@@ -157,7 +157,7 @@ object RedshiftJsonWriter {
       .format("com.databricks.spark.redshift")
       .option("url", url)
       .option("dbtable", redshiftTable)
-      .option("tempdir", s"s3a://$tempdir")
+      .option("tempdir", s"s3a://${accessKey}:${secretKey}@${tempdir}")
       .option("tempformat", "CSV")
       .mode(saveMode)
       .save()
