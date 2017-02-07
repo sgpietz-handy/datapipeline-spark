@@ -49,6 +49,8 @@ object Source {
 case class Config(
   redshiftTable: String = "",
   url: String = "",
+  accessKey: String = "",
+  secretKey: String = "",
   tempdir: String = "",
   saveMode: String = "",
   source: Option[Source] = None
@@ -62,7 +64,13 @@ object Config {
       } text ("redshift table name")
       arg[String]("url") action { (x, c) =>
         c.copy(url = x)
-      } text ("redshift table name")
+      } text ("redshift jdbc url")
+      arg[String]("access-key") action { (x, c) =>
+        c.copy(accessKey = x)
+      } text ("aws access key id")
+      arg[String]("secret-key") action { (x, c) =>
+        c.copy(secretKey = x)
+      } text ("aws secret access key")
       arg[String]("tempdir") action { (x, c) =>
         c.copy(tempdir = x)
       } text ("s3 temp directory to stage intermediate data files")
@@ -80,6 +88,7 @@ object Config {
       } text ("query string for derived table")
     }
 }
+
 
 object RedshiftJsonWriter {
 
@@ -104,11 +113,14 @@ object RedshiftJsonWriter {
   }
 
   def main(args: Array[String]): Unit = {
-    val Some(Config(redshiftTable, url, tempdir, saveMode, source)) =
+    val Some(Config(redshiftTable, url, accessKey, secretKey, tempdir, saveMode, source)) =
       Config.parser.parse(args, Config())
 
     val conf = new SparkConf().setAppName("redshift-json-writer")
     implicit val sc = new SparkContext(conf)
+    sc.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", accessKey)
+    sc.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", secretKey)
+
     implicit val sqlContext = new HiveContext(sc)
 
     def withLegalName(df: DataFrame, name: String): DataFrame = {

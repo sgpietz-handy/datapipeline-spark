@@ -9,5 +9,3 @@ echo "class = $class"
 echo "args = $args"
 
 spark-submit --master $master --files /usr/hdp/current/spark-client/conf/hive-site.xml --class $class /handy-pipeline-assembly.jar $args
-
-# spark-submit --master $master --files /usr/hdp/current/spark-client/conf/hive-site.xml,/usr/hdp/current/spark-client/conf/spark-defaults.conf --class $class /handy-pipeline-assembly.jar $args
