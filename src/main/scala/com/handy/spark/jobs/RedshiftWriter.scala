@@ -90,7 +90,7 @@ object Config {
 }
 
 
-object RedshiftJsonWriter {
+object RedshiftWriter {
 
   def numCharToChar(a: Char): Char = a match {
     case '0' => 'a'
@@ -118,9 +118,6 @@ object RedshiftJsonWriter {
 
     val conf = new SparkConf().setAppName("redshift-json-writer")
     implicit val sc = new SparkContext(conf)
-    sc.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", accessKey)
-    sc.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", secretKey)
-
     implicit val sqlContext = new HiveContext(sc)
 
     def withLegalName(df: DataFrame, name: String): DataFrame = {
@@ -135,9 +132,9 @@ object RedshiftJsonWriter {
     val cl = ClassLoader.getSystemClassLoader
 
     cl.asInstanceOf[java.net.URLClassLoader].getURLs.foreach(println)
-    println("driver:")
+    println("driver classpath:")
     println(conf.get("spark.driver.extraClassPath"))
-    println("executor:")
+    println("executor classpath:")
     println(conf.get("spark.executor.extraClassPath"))
 
     val df = table.schema.fields.foldLeft(table) {
@@ -158,7 +155,6 @@ object RedshiftJsonWriter {
       .option("url", url)
       .option("dbtable", redshiftTable)
       .option("tempdir", s"s3a://${accessKey}:${secretKey}@${tempdir}")
-      .option("tempformat", "CSV")
       .mode(saveMode)
       .save()
   }

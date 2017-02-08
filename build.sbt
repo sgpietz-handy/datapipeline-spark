@@ -1,6 +1,6 @@
-name := "handy-pipeline"
+name := "spark-jobs"
 
-version := "0.2"
+version := "0.1"
 
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % "1.5.2" % "provided",
